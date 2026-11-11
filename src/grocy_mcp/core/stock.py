@@ -73,15 +73,19 @@ async def stock_add(
     product: str,
     amount: float,
     best_before_date: str | None = None,
+    location: str | None = None,
     **kwargs,
 ) -> str:
-    """Add stock for a product, optionally with a best-before date (YYYY-MM-DD)."""
+    """Add stock for a product, optionally with a best-before date (YYYY-MM-DD) and location."""
     product_id = await resolve_product(client, product)
     if best_before_date:
         kwargs["best_before_date"] = best_before_date
+    if location:
+        kwargs["location_id"] = await resolve_location(client, location)
     await client.add_stock(product_id, amount, **kwargs)
     suffix = f" (best before {best_before_date})" if best_before_date else ""
-    return f"Added {amount} of '{product}' to stock{suffix}."
+    where = f" at '{location}'" if location else ""
+    return f"Added {amount} of '{product}' to stock{where}{suffix}."
 
 
 async def stock_consume(client: GrocyClient, product: str, amount: float, **kwargs) -> str:
@@ -91,12 +95,18 @@ async def stock_consume(client: GrocyClient, product: str, amount: float, **kwar
     return f"Consumed {amount} of '{product}' from stock."
 
 
-async def stock_transfer(client: GrocyClient, product: str, amount: float, to_location: str) -> str:
-    """Transfer stock to a different location."""
+async def stock_transfer(
+    client: GrocyClient, product: str, amount: float, from_location: str, to_location: str
+) -> str:
+    """Transfer stock from one location to another."""
     product_id = await resolve_product(client, product)
-    location_id = await resolve_location(client, to_location)
-    await client.transfer_stock(product_id, amount, location_id)
-    return f"Transferred {amount} of '{product}' to location '{to_location}'."
+    from_id = await resolve_location(client, from_location)
+    to_id = await resolve_location(client, to_location)
+    await client.transfer_stock(product_id, amount, from_id, to_id)
+    return (
+        f"Transferred {amount} of '{product}' from location '{from_location}' "
+        f"to location '{to_location}'."
+    )
 
 
 async def stock_inventory(client: GrocyClient, product: str, new_amount: float) -> str:

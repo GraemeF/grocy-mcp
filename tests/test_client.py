@@ -1,5 +1,7 @@
 """Tests for GrocyClient."""
 
+import json
+
 import httpx
 import pytest
 
@@ -59,6 +61,18 @@ async def test_add_stock(client, mock_api):
     mock_api.post("/stock/products/1/add").mock(return_value=httpx.Response(200, json=[{"id": 10}]))
     result = await client.add_stock(1, 2.0)
     assert result is not None
+
+
+async def test_transfer_stock_sends_both_locations(client, mock_api):
+    route = mock_api.post("/stock/products/1/transfer").mock(
+        return_value=httpx.Response(200, json=[{"id": 10}])
+    )
+    await client.transfer_stock(1, 2.0, 3, 4)
+    assert json.loads(route.calls.last.request.content) == {
+        "amount": 2.0,
+        "location_id_from": 3,
+        "location_id_to": 4,
+    }
 
 
 async def test_consume_stock(client, mock_api):

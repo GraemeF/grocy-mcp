@@ -166,7 +166,10 @@ def create_mcp_server() -> FastMCP:
 
     @mcp.tool()
     async def stock_add_tool(
-        product: str, amount: float, best_before_date: str | None = None
+        product: str,
+        amount: float,
+        best_before_date: str | None = None,
+        location: str | None = None,
     ) -> str:
         """Add stock for a product (e.g. after a purchase).
 
@@ -175,9 +178,11 @@ def create_mcp_server() -> FastMCP:
             amount: Quantity to add (e.g. 2.0 for two units).
             best_before_date: Optional best-before date as YYYY-MM-DD. When omitted,
                 Grocy applies the product's default best-before days.
+            location: Optional location name (e.g. "Garage fridge") or numeric location ID
+                to put the stock at. When omitted, Grocy uses the product's default location.
         """
         async with _get_client() as client:
-            return await stock_add(client, product, amount, best_before_date)
+            return await stock_add(client, product, amount, best_before_date, location)
 
     @mcp.tool()
     async def stock_consume_tool(product: str, amount: float) -> str:
@@ -191,16 +196,19 @@ def create_mcp_server() -> FastMCP:
             return await stock_consume(client, product, amount)
 
     @mcp.tool()
-    async def stock_transfer_tool(product: str, amount: float, to_location: str) -> str:
-        """Move stock of a product to a different storage location.
+    async def stock_transfer_tool(
+        product: str, amount: float, from_location: str, to_location: str
+    ) -> str:
+        """Move stock of a product from one storage location to another.
 
         Args:
             product: Product name (e.g. "Milk") or numeric product ID.
             amount: Quantity to transfer.
+            from_location: Source location name (e.g. "Pantry") or numeric location ID.
             to_location: Destination location name (e.g. "Fridge") or numeric location ID.
         """
         async with _get_client() as client:
-            return await stock_transfer(client, product, amount, to_location)
+            return await stock_transfer(client, product, amount, from_location, to_location)
 
     @mcp.tool()
     async def stock_inventory_tool(product: str, new_amount: float) -> str:

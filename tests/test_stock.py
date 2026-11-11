@@ -64,6 +64,17 @@ async def test_stock_add_with_best_before_date(mock_client):
         assert "2026-11-20" in result
 
 
+async def test_stock_add_at_named_location(mock_client):
+    with (
+        patch("grocy_mcp.core.stock.resolve_product", return_value=1),
+        patch("grocy_mcp.core.stock.resolve_location", return_value=4) as mock_loc,
+    ):
+        result = await stock_add(mock_client, "Milk", 2.0, location="Garage fridge")
+        mock_loc.assert_called_once_with(mock_client, "Garage fridge")
+        mock_client.add_stock.assert_called_once_with(1, 2.0, location_id=4)
+        assert "Garage fridge" in result
+
+
 async def test_stock_consume(mock_client):
     with patch("grocy_mcp.core.stock.resolve_product", return_value=1):
         result = await stock_consume(mock_client, "Milk", 1.0)
@@ -92,10 +103,11 @@ async def test_stock_transfer(mock_client):
     mock_client.transfer_stock.return_value = [{"id": 10}]
     with (
         patch("grocy_mcp.core.stock.resolve_product", return_value=1),
-        patch("grocy_mcp.core.stock.resolve_location", return_value=2),
+        patch("grocy_mcp.core.stock.resolve_location", side_effect=[3, 2]),
     ):
-        result = await stock_transfer(mock_client, "Milk", 1.0, "Fridge")
-        mock_client.transfer_stock.assert_called_once_with(1, 1.0, 2)
+        result = await stock_transfer(mock_client, "Milk", 1.0, "Pantry", "Fridge")
+        mock_client.transfer_stock.assert_called_once_with(1, 1.0, 3, 2)
+        assert "Pantry" in result and "Fridge" in result
         assert result
 
 
@@ -190,7 +202,7 @@ async def test_stock_transfer_quotes_names(mock_client):
         patch("grocy_mcp.core.stock.resolve_product", return_value=1),
         patch("grocy_mcp.core.stock.resolve_location", return_value=2),
     ):
-        result = await stock_transfer(mock_client, "Eggs", 3.0, "Fridge")
+        result = await stock_transfer(mock_client, "Eggs", 3.0, "Pantry", "Fridge")
         assert "'Eggs'" in result
         assert "'Fridge'" in result
 

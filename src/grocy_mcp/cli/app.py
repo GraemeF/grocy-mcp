@@ -391,12 +391,13 @@ def cmd_stock_add(
     best_before_date: str | None = typer.Option(
         None, "--best-before", help="Best-before date, YYYY-MM-DD."
     ),
+    location: str | None = typer.Option(None, "--location", help="Location name or ID."),
 ) -> None:
     """Add stock for a product."""
 
     async def _inner():
         async with _client() as client:
-            return await stock_add(client, product, amount, best_before_date)
+            return await stock_add(client, product, amount, best_before_date, location)
 
     _exec(_inner())
 
@@ -419,13 +420,14 @@ def cmd_stock_consume(
 def cmd_stock_transfer(
     product: str = typer.Argument(..., help="Product name or ID."),
     amount: float = typer.Argument(..., help="Quantity to transfer."),
+    from_location: str = typer.Argument(..., help="Source location name or ID."),
     to_location: str = typer.Argument(..., help="Destination location name or ID."),
 ) -> None:
-    """Transfer stock to a different location."""
+    """Transfer stock from one location to another."""
 
     async def _inner():
         async with _client() as client:
-            return await stock_transfer(client, product, amount, to_location)
+            return await stock_transfer(client, product, amount, from_location, to_location)
 
     _exec(_inner())
 
