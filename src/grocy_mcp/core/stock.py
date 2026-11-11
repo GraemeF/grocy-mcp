@@ -20,35 +20,34 @@ async def stock_overview(client: GrocyClient) -> str:
     return "\n".join(lines)
 
 
+def _volatile_line(item: dict) -> str:
+    product = item.get("product") or {}
+    name = product.get("name", f"Product {item.get('product_id')}")
+    details = []
+    if item.get("amount") is not None:
+        details.append(str(item["amount"]))
+    if item.get("best_before_date"):
+        details.append(f"best before {item['best_before_date']}")
+    return f"  {name}" + (f" ({', '.join(details)})" if details else "")
+
+
 async def stock_expiring(client: GrocyClient) -> str:
-    """Return products that are expiring soon or already expired."""
+    """Return products that are due soon, overdue, expired or below minimum stock."""
     volatile = await client.get_volatile_stock()
-    expiring = volatile.get("expiring_products", [])
-    expired = volatile.get("expired_products", [])
-    missing = volatile.get("missing_products", [])
+    # Grocy < 4.0 called the due-soon list "expiring_products".
+    due = volatile.get("due_products") or volatile.get("expiring_products", [])
+    sections = [
+        ("Due soon:", due),
+        ("Overdue (best before date passed):", volatile.get("overdue_products", [])),
+        ("Expired:", volatile.get("expired_products", [])),
+        ("Missing (below min stock):", volatile.get("missing_products", [])),
+    ]
 
     lines = []
-
-    if expiring:
-        lines.append("Expiring soon:")
-        for item in expiring:
-            product = item.get("product") or {}
-            name = product.get("name", f"Product {item.get('product_id')}")
-            lines.append(f"  {name}")
-
-    if expired:
-        lines.append("Expired:")
-        for item in expired:
-            product = item.get("product") or {}
-            name = product.get("name", f"Product {item.get('product_id')}")
-            lines.append(f"  {name}")
-
-    if missing:
-        lines.append("Missing (below min stock):")
-        for item in missing:
-            product = item.get("product") or {}
-            name = product.get("name", f"Product {item.get('product_id')}")
-            lines.append(f"  {name}")
+    for heading, items in sections:
+        if items:
+            lines.append(heading)
+            lines.extend(_volatile_line(item) for item in items)
 
     if not lines:
         return "No expiring, expired, or missing products found."

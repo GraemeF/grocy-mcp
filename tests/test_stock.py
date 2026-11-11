@@ -137,9 +137,34 @@ async def test_stock_overview_format(mock_client):
     assert "[1] Milk" in result
 
 
+async def test_stock_expiring_grocy4_keys(mock_client):
+    item = {
+        "product_id": 2,
+        "amount": 1.5,
+        "best_before_date": "2026-11-12",
+        "product": {"id": 2, "name": "Yoghurt"},
+    }
+    mock_client.get_volatile_stock.return_value = {
+        "due_products": [item],
+        "overdue_products": [{**item, "product": {"id": 3, "name": "Cream"}}],
+        "expired_products": [{**item, "product": {"id": 4, "name": "Ham"}}],
+        "missing_products": [],
+    }
+    result = await stock_expiring(mock_client)
+    assert "Due soon:" in result
+    assert "Yoghurt" in result
+    assert "Overdue (best before date passed):" in result
+    assert "Cream" in result
+    assert "Expired:" in result
+    assert "Ham" in result
+    assert "2026-11-12" in result
+    assert "1.5" in result
+
+
 async def test_stock_expiring_empty(mock_client):
     mock_client.get_volatile_stock.return_value = {
-        "expiring_products": [],
+        "due_products": [],
+        "overdue_products": [],
         "expired_products": [],
         "missing_products": [],
     }

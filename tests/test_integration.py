@@ -52,6 +52,7 @@ async def test_get_objects_products(live_client):
 async def test_get_volatile_stock(live_client):
     """Volatile stock endpoint should return expected keys."""
     volatile = await live_client.get_volatile_stock()
-    assert "expiring_products" in volatile
+    assert "due_products" in volatile
+    assert "overdue_products" in volatile
     assert "expired_products" in volatile
     assert "missing_products" in volatile
