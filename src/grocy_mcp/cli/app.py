@@ -388,12 +388,15 @@ def cmd_stock_product_info(product: str = typer.Argument(..., help="Product name
 def cmd_stock_add(
     product: str = typer.Argument(..., help="Product name or ID."),
     amount: float = typer.Argument(..., help="Quantity to add."),
+    best_before_date: str | None = typer.Option(
+        None, "--best-before", help="Best-before date, YYYY-MM-DD."
+    ),
 ) -> None:
     """Add stock for a product."""
 
     async def _inner():
         async with _client() as client:
-            return await stock_add(client, product, amount)
+            return await stock_add(client, product, amount, best_before_date)
 
     _exec(_inner())
 

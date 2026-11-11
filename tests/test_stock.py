@@ -57,6 +57,13 @@ async def test_stock_add(mock_client):
         assert "added" in result.lower() or "milk" in result.lower()
 
 
+async def test_stock_add_with_best_before_date(mock_client):
+    with patch("grocy_mcp.core.stock.resolve_product", return_value=1):
+        result = await stock_add(mock_client, "Milk", 2.0, best_before_date="2026-11-20")
+        mock_client.add_stock.assert_called_once_with(1, 2.0, best_before_date="2026-11-20")
+        assert "2026-11-20" in result
+
+
 async def test_stock_consume(mock_client):
     with patch("grocy_mcp.core.stock.resolve_product", return_value=1):
         result = await stock_consume(mock_client, "Milk", 1.0)

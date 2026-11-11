@@ -165,15 +165,19 @@ def create_mcp_server() -> FastMCP:
             return await stock_product_info(client, product)
 
     @mcp.tool()
-    async def stock_add_tool(product: str, amount: float) -> str:
+    async def stock_add_tool(
+        product: str, amount: float, best_before_date: str | None = None
+    ) -> str:
         """Add stock for a product (e.g. after a purchase).
 
         Args:
             product: Product name (e.g. "Milk") or numeric product ID.
             amount: Quantity to add (e.g. 2.0 for two units).
+            best_before_date: Optional best-before date as YYYY-MM-DD. When omitted,
+                Grocy applies the product's default best-before days.
         """
         async with _get_client() as client:
-            return await stock_add(client, product, amount)
+            return await stock_add(client, product, amount, best_before_date)
 
     @mcp.tool()
     async def stock_consume_tool(product: str, amount: float) -> str:

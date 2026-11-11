@@ -69,11 +69,20 @@ async def stock_product_info(client: GrocyClient, product: str) -> str:
     return f"Product: {name}\n  In stock: {amount}\n  Next best before: {best_before}"
 
 
-async def stock_add(client: GrocyClient, product: str, amount: float, **kwargs) -> str:
-    """Add stock for a product."""
+async def stock_add(
+    client: GrocyClient,
+    product: str,
+    amount: float,
+    best_before_date: str | None = None,
+    **kwargs,
+) -> str:
+    """Add stock for a product, optionally with a best-before date (YYYY-MM-DD)."""
     product_id = await resolve_product(client, product)
+    if best_before_date:
+        kwargs["best_before_date"] = best_before_date
     await client.add_stock(product_id, amount, **kwargs)
-    return f"Added {amount} of '{product}' to stock."
+    suffix = f" (best before {best_before_date})" if best_before_date else ""
+    return f"Added {amount} of '{product}' to stock{suffix}."
 
 
 async def stock_consume(client: GrocyClient, product: str, amount: float, **kwargs) -> str:
